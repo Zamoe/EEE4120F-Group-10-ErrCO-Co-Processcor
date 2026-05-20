@@ -40,7 +40,10 @@ The testbenches to focus on are Encoder_tb.v, Decoder_tb.v, ErrCo_Control_tb.v, 
 | `1100`         | BNE      | —                   | I-type | Branch if R[RS1] != R[RS2] |
 | `1101`         | JMP      | —                   | I-type | Unconditional jump |
 
-
+#### Instruction Encoding (16-bit) 
+R-type:    [15:12] opcode | [11:9] RS1 | [8:6] RS2 | [5:3] WS  | [2:0] unused
+I-type:    [15:12] opcode | [11:9] RS1 | [8:6] WS  | [5:0] immediate (signed)
+ErrCo:     [15:12] 1010   | [11:9] RS1 | [8:6] WS  | [5:4] sub-op | [3:0] unused
 ---
 
 ## Folder Structure
