@@ -92,25 +92,55 @@ The integration interfaces with the baseline modules via external bus intercepti
 
 ## Compilation and Simulation Terminal Controls
 
-### Verification Automation
-
-| Command | Action / Target Area |
-| :--- | :--- |
-| `make errco_control` | Compiles and executes the structural hardware primitives test suite. |
-| `make errco_unit` | Validates the top-level mode decoder and operand isolation routines. |
-| `make integration` | Runs the full-system verification trace containing live SEU fault injection. |
-| `make waves` | Opens the full-system trace inside GTKWave for runtime analysis. |
-| `make clean` | Flushes all generated binaries and waveform VCD footprints. |
 
 ### Manual Execution Protocols
 
-To manually compile and simulate the full hardware stack with fault injection profiles:
+To compile and simulate the full hardware stack with fault injection profiles, run the StarCore1_tb.v file:
 
 ```bash
-iverilog -Wall -I src/ -o build/errco_core_sim \
-    src/Parameter.v src/Encoder.v src/Decoder.v src/ParityStore.v \
-    src/ErrCo_Control.v src/ErrCo.v src/ALU.v src/GPR.v \
-    src/InstructionMemory.v src/DataMemory.v src/ALU_Control.v \
-    src/ControlUnit.v src/Datapath.v src/StarCore1.v \
-    tb/StarCore1_tb.v
-cd test && ../build/errco_core_sim
+     iverilog -Wall -I ../src -o ../build/star_sim \
+        ../src/Parameter.v ../src/ALU.v ../src/GPR.v \
+        ../src/InstructionMemory.v ../src/DataMemory.v \
+        ../src/ALU_Control.v ../src/ControlUnit.v \
+        ../src/Encoder.v ../src/Decoder.v ../src/ParityStore.v \
+        ../src/ErrCo_Control.v ../src/ErrCo.v \
+        ../src/Datapath.v ../src/StarCore1.v \
+        StarCore1_tb.v
+     && cd ../test && ../build/star_sim
+     && gtkwave ../waves/StarCore1_tb.vcd &
+```
+To run Encoder_tb.v:
+This tb tests giving in a 16-bit data and generating the correct 6-bit parity. 
+```bash
+   iverilog -Wall -I ../src -o ../build/Encoder_sim ../src/Encoder.v Encoder_tb.v - need to be in tb
+   cd ../test && ../build/Encoder_sim -- need to be in test
+   gtkwave ../waves/Encoder_tb.vcd &
+```
+
+To run Decoder_tb.v:
+This tb tests detecting and correcting SEUs and detecting DEDs for a given input parity and corresponding data
+```bash
+   iverilog -Wall -I ../src -o ../build/Decoder_sim ../src/Decoder.v Decoder_tb.v - need to be in tb
+   cd ../test && ../build/Deccoder_sim -- need to be in test
+   gtkwave ../waves/Decoder_tb.vcd &
+```
+
+To run ErrCo_Control_tb.v:
+This tb runs the entire ErrCo as a standalone module, integrating Encoding, Decoding and the Pairty Store as one unit. 
+```bash
+     iverilog -Wall -I ../src -o ../build/ErrCo_Control_sim \
+        ../src/Encoder.v ../src/Decoder.v ../src/ParityStore.v \
+        ../src/ErrCo_Control.v ErrCo_Control_tb.v
+     cd ../test && ../build/ErrCo_Control_sim
+     gtkwave ../waves/ErrCo_Control_tb.vcd &
+```
+
+To run ErrCo_tb.v:
+This tb runs the entire ErrCo as a standalone module, including the StarCore1 integration:
+```bash
+     iverilog -Wall -I ../src -o ../build/ErrCo_sim \
+        ../src/Encoder.v ../src/Decoder.v ../src/ParityStore.v \
+        ../src/ErrCo_Control.v ../src/ErrCo.v ErrCo_tb.v
+     cd ../test && ../build/ErrCo_sim
+     gtkwave ../waves/ErrCo_tb.vcd &
+```
