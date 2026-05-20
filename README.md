@@ -37,30 +37,54 @@ The development, synthesis verification, and systemic testing of this architectu
 ## Folder Structure
 
 Project-ErrCo/
-├── Makefile                    # Simulation and test suite automation
+
+├── Makefile                        # Simulation and test suite automation
+
 ├── src/
-│   ├── Parameter.v            # Compile-time hardware constraints
-│   ├── ALU.v                  # 16-bit execution arithmetic logic
-│   ├── GPR.v                  # Register file (R0-R7) with manual R0-grounding
-│   ├── InstructionMemory.v    # Program ROM array
-│   ├── DataMemory.v           # Core Data RAM array
-│   ├── ALU_Control.v          # ALU function controller
-│   ├── ControlUnit.v          # Main CPU instruction decoder with ErrCo support
-│   ├── Datapath.v             # Intercepted CPU datapath core
-│   ├── StarCore1.v            # Top-level wrapper module
-│   ├── Encoder.v              # Combinational Hamming matrix encoding logic
-│   ├── Decoder.v              # Combinational syndrome calculation and correction
-│   ├── ParityStore.v          # 8x6-bit shadow parity memory block
-│   ├── ErrCo_Control.v        # Structural co-processor orchestration layer
-│   └── ErrCo.v                # Mode-aware co-processor interface & operand isolation
+
+│   ├── Parameter.v            # Compile-time hardware constraints
+
+│   ├── ALU.v                  # 16-bit execution arithmetic logic
+
+│   ├── GPR.v                  # Register file (R0-R7) with manual R0-grounding
+
+│   ├── InstructionMemory.v    # Program ROM array
+
+│   ├── DataMemory.v           # Core Data RAM array
+
+│   ├── ALU_Control.v          # ALU function controller
+
+│   ├── ControlUnit.v          # Main CPU instruction decoder with ErrCo support
+
+│   ├── Datapath.v             # Intercepted CPU datapath core
+
+│   ├── StarCore1.v            # Top-level wrapper module
+
+│   ├── Encoder.v              # Combinational Hamming matrix encoding logic
+
+│   ├── Decoder.v              # Combinational syndrome calculation and correction
+
+│   ├── ParityStore.v          # 8x6-bit shadow parity memory block
+
+│   ├── ErrCo_Control.v        # Structural co-processor orchestration layer
+
+│   └── ErrCo.v                # Mode-aware co-processor interface & operand isolation
+
 ├── tb/
-│   ├── ErrCo_Control_tb.v     # Component testbench for core hardware primitives
-│   ├── ErrCo_tb.v             # Unit testbench for mode-aware isolation logic
-│   └── StarCore1_tb.v         # Full-system fault injection integration testbench
+
+│   ├── ErrCo_Control_tb.v     # Component testbench for core hardware primitives
+
+│   ├── ErrCo_tb.v             # Unit testbench for mode-aware isolation logic
+
+│   └── StarCore1_tb.v         # Full-system fault injection integration testbench
+
 ├── test/
-│   ├── test.prog              # Target test instructions (15-instruction validation trace)
-│   └── test.data              # Baseline memory data contents
-└── waves/                     # VCD output path for GTKWave inspections
+
+│   ├── test.prog              # Target test instructions (15-instruction validation trace)
+
+│   └── test.data              # Baseline memory data contents
+
+└── waves/                     # VCD output path for GTKWave inspections
 
 ---
 
