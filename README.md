@@ -32,36 +32,34 @@ The development, synthesis verification, and systemic testing of this architectu
 | `1100`         | BNE      | —                   | I-type | Branch if R[RS1] != R[RS2] |
 | `1101`         | JMP      | —                   | I-type | Unconditional jump |
 
-## Folder Structure
+---
 
-```
-Practical-4/
-├── Makefile                   # Build and simulation automation
+Project-ErrCo/
+├── Makefile                    # Simulation and test suite automation
 ├── src/
-│   ├── Parameter.v            # Shared compile-time constants
-│   ├── ALU.v                  # Task 1 — 16-bit ALU
-│   ├── GPR.v                  # Task 2 — Register file (R0–R7)
-│   ├── InstructionMemory.v    # Task 3 — ROM (loads test.prog)
-│   ├── DataMemory.v           # Task 4 — RAM (loads test.data)
-│   ├── ALU_Control.v          # Task 5 — ALU control decoder
-│   ├── ControlUnit.v          # Task 6 — Main control unit
-│   ├── Datapath.v             # Task 7 — Full datapath integration
-│   └── StarCore1.v            # Task 8 — Top-level processor module
+│   ├── Parameter.v            # Compile-time hardware constraints
+│   ├── ALU.v                  # 16-bit execution arithmetic logic
+│   ├── GPR.v                  # Register file (R0-R7) with manual R0-grounding
+│   ├── InstructionMemory.v    # Program ROM array
+│   ├── DataMemory.v           # Core Data RAM array
+│   ├── ALU_Control.v          # ALU function controller
+│   ├── ControlUnit.v          # Main CPU instruction decoder with ErrCo support
+│   ├── Datapath.v             # Intercepted CPU datapath core
+│   ├── StarCore1.v            # Top-level wrapper module
+│   ├── Encoder.v              # Combinational Hamming matrix encoding logic
+│   ├── Decoder.v              # Combinational syndrome calculation and correction
+│   ├── ParityStore.v          # 8x6-bit shadow parity memory block
+│   ├── ErrCo_Control.v        # Structural co-processor orchestration layer
+│   └── ErrCo.v                # Mode-aware co-processor interface & operand isolation
 ├── tb/
-│   ├── ALU_tb.v               # Testbench for Task 1
-│   ├── GPR_tb.v               # Testbench for Task 2
-│   ├── InstructionMemory_tb.v # Testbench for Task 3
-│   ├── DataMemory_tb.v        # Testbench for Task 4
-│   ├── ALU_Control_tb.v       # Testbench for Task 5
-│   ├── ControlUnit_tb.v       # Testbench for Task 6
-│   └── StarCore1_tb.v         # Integration testbench for Tasks 7 & 8
+│   ├── ErrCo_Control_tb.v     # Component testbench for core hardware primitives
+│   ├── ErrCo_tb.v             # Unit testbench for mode-aware isolation logic
+│   └── StarCore1_tb.v         # Full-system fault injection integration testbench
 ├── test/
-│   ├── test.prog              # Binary instruction memory contents (16 lines)
-│   └── test.data              # Binary data memory initial contents (8 lines)
+│   ├── test.prog              # Target test instructions (15-instruction validation trace)
+│   └── test.data              # Baseline memory data contents
 ├── build/                     # Compiled simulation executables (auto-created)
-└── waves/                     # VCD waveform output files (auto-created)
-```
-
+└── waves/                     # VCD output path for GTKWave inspections
 ---
 
 ## Co-Processor Implementation & Integration Architecture
