@@ -8,6 +8,13 @@ The development, synthesis verification, and systemic testing of this architectu
 ![Project ErrCo Poster](Project_ErrCo_Poster.png)
 ---
 
+## Key things in the Repository 
+
+The files to focus on here are Encoder.v, Decoder.v, ParityStore.v, ErrCo_Control.v and ErrCo.v. 
+From the orignal StarCore1 files, the Datapath.v, 
+
+The testbenches to focus on are Encoder_tb.v, Decoder_tb.v, ErrCo_Control_tb.v, ErrCO_tb.v and StarCore_tb.v.
+
 ## Architecture Specifications
 
 - **Word Width:** 16 bits data payload + 6 bits systematic parity (22-bit total codeword width)
