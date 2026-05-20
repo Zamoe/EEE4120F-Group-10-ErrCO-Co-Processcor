@@ -32,7 +32,12 @@ The development, synthesis verification, and systemic testing of this architectu
 | `1100`         | BNE      | —                   | I-type | Branch if R[RS1] != R[RS2] |
 | `1101`         | JMP      | —                   | I-type | Unconditional jump |
 
+
 ---
+
+## Folder Structure
+
+```
 
 Project-ErrCo/
 ├── Makefile                    # Simulation and test suite automation
@@ -60,6 +65,7 @@ Project-ErrCo/
 │   └── test.data              # Baseline memory data contents
 ├── build/                     # Compiled simulation executables (auto-created)
 └── waves/                     # VCD output path for GTKWave inspections
+```
 ---
 
 ## Co-Processor Implementation & Integration Architecture
