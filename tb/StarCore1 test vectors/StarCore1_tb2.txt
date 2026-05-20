@@ -1,0 +1,280 @@
+// =========================================================================
+// Project ErrCo: Closed-Loop SEU Self-Healing Integration Testbench (Test 2)
+// =========================================================================
+//
+// Project Group 10
+//
+// MEMBERS:
+//   - Zameer Mahomed, MHMZAM005
+//   - Mahir Khan,     KHNMAH014
+//
+// File        : StarCore1_tb.v   (TEST 2 - replaces test 1 contents)
+// Description : Second integration test for StarCore1 + ErrCo.  Where test 1
+//               verifies that the hardware works as a system, test 2 verifies
+//               that ErrCo's protection is OBSERVABLE AND USABLE TO SOFTWARE
+//               through a closed-loop detect/repair/verify sequence.
+//
+//               Program flow (test2.prog):
+//                 (i)  Set up: load nontrivial values into R1, R2
+//                 (ii) Protect: ENCST both values into Mem[5] and Mem[6]
+//                 (iii)Inject: testbench corrupts Mem[5] (1 bit) and
+//                              Mem[6] (2 bits) via hierarchical poke
+//
+//                 SEC story on Mem[5]:
+//                 (iv) Plain LD  -> R6 = CORRUPTED value (baseline: shows
+//                                  what would happen WITHOUT protection)
+//                 (v)  CHECK     -> R3 = status word with SE bit set
+//                 (vi) SCRUB     -> Mem[5] repaired
+//                 (vii)CHECK     -> R4 = clean status word
+//                 (viii)Plain LD -> R5 = clean value (proves the repair)
+//
+//                 DE story on Mem[6]:
+//                 (ix) LDC       -> DE; write suppressed; R7 unchanged
+//                 (x)  SCRUB     -> DE; write suppressed; Mem[6] unchanged
+//                 (xi) CHECK     -> R1 = status word with DE bit set
+//
+//               Build (after copying test2.prog -> test/test.prog and
+//                test2.data -> test/test.data):
+//                 iverilog -Wall -I ../src -o ../build/star_sim \
+//                    ../src/Parameter.v ../src/ALU.v ../src/GPR.v \
+//                    ../src/InstructionMemory.v ../src/DataMemory.v \
+//                    ../src/ALU_Control.v ../src/ControlUnit.v \
+//                    ../src/Encoder.v ../src/Decoder.v ../src/ParityStore.v \
+//                    ../src/ErrCo_Control.v ../src/ErrCo.v \
+//                    ../src/Datapath.v ../src/StarCore1.v \
+//                    StarCore1_tb.v
+//                 cd ../test && ../build/star_sim
+//
+//               Important sampling note: errco_SE / errco_DE / errco_invalid
+//               are combinational outputs of ErrCo.  Operand isolation gates
+//               only the Encoder/Decoder INPUTS to 0, so during a non-ErrCo
+//               cycle the Decoder is still computing on (data=0, parity=
+//               parity_store[alu_addr]) and may report nonzero flags.  These
+//               flags are architecturally meaningless when errco_active=0.
+//               This testbench therefore samples flags only mid-cycle during
+//               ErrCo instructions.
+// =============================================================================
+
+`timescale 1ns / 1ps
+`include "../src/Parameter.v"
+
+module StarCore1_tb;
+
+    reg clk;
+    StarCore1 uut (.clk(clk));
+
+    initial clk = 1'b0;
+    always  #5 clk = ~clk;
+
+    initial begin
+        $dumpfile("../waves/StarCore1_tb.vcd");
+        $dumpvars(0, StarCore1_tb);
+    end
+
+    integer fail_count;
+    integer test_id;
+    initial begin fail_count = 0; test_id = 1; end
+
+    // -------------------------------------------------------------------------
+    // Check tasks (same shape as test 1)
+    // -------------------------------------------------------------------------
+    task check_reg;
+        input [2:0]  r;
+        input [15:0] expected;
+        input [255:0] label;
+        reg [15:0] got;
+        begin
+            got = uut.DU.reg_file.reg_array[r];
+            if (got === expected)
+                $display("PASS [T%0d] %0s: R%0d = 0x%h", test_id, label, r, got);
+            else begin
+                $display("FAIL [T%0d] %0s: R%0d got 0x%h, expected 0x%h",
+                         test_id, label, r, got, expected);
+                fail_count = fail_count + 1;
+            end
+            test_id = test_id + 1;
+        end
+    endtask
+
+    task check_mem;
+        input [2:0]  addr;
+        input [15:0] expected;
+        input [255:0] label;
+        reg [15:0] got;
+        begin
+            got = uut.DU.dm.memory[addr];
+            if (got === expected)
+                $display("PASS [T%0d] %0s: Mem[%0d] = 0x%h", test_id, label, addr, got);
+            else begin
+                $display("FAIL [T%0d] %0s: Mem[%0d] got 0x%h, expected 0x%h",
+                         test_id, label, addr, got, expected);
+                fail_count = fail_count + 1;
+            end
+            test_id = test_id + 1;
+        end
+    endtask
+
+    task check_flag;
+        input        got;
+        input        expected;
+        input [255:0] label;
+        begin
+            if (got === expected)
+                $display("PASS [T%0d] %0s: flag = %b", test_id, label, got);
+            else begin
+                $display("FAIL [T%0d] %0s: got %b, expected %b",
+                         test_id, label, got, expected);
+                fail_count = fail_count + 1;
+            end
+            test_id = test_id + 1;
+        end
+    endtask
+
+    task check_pc;
+        input [15:0] expected;
+        input [255:0] label;
+        reg [15:0] got;
+        begin
+            got = uut.DU.pc_current;
+            if (got === expected)
+                $display("PASS [T%0d] %0s: PC = 0x%h", test_id, label, got);
+            else begin
+                $display("FAIL [T%0d] %0s: PC got 0x%h, expected 0x%h",
+                         test_id, label, got, expected);
+                fail_count = fail_count + 1;
+            end
+            test_id = test_id + 1;
+        end
+    endtask
+
+    // =========================================================================
+    // Main flow
+    // =========================================================================
+    initial begin
+        $display("=== StarCore1 Integration Testbench - Test 2 ===");
+        $display("    Closed-loop detect / repair / verify");
+        $display("");
+        $display("--- Phase 1: setup and protected stores ---");
+
+        // Cycle 1 posedge @ 5ns - LD R1 <- Mem[7] = 0x0008 (nontrivial start
+        // value so the later DE-CHECK write of 0x0002 is visibly distinct)
+        @(posedge clk); #1;
+        check_reg(3'd1, 16'h0008, "R1 after LD R1, R0+7");
+
+        // Cycle 2 - LD R2 <- Mem[2] = 0x0003
+        @(posedge clk); #1;
+        check_reg(3'd2, 16'h0003, "R2 after LD R2, R0+2");
+
+        // Cycle 3 - ENCST R1 -> Mem[5] : Mem[5]=8, parity[5] encoded
+        @(posedge clk); #1;
+        check_mem(3'd5, 16'h0008, "Mem[5] after ENCST R1");
+
+        // Cycle 4 - ENCST R2 -> Mem[6] : Mem[6]=3, parity[6] encoded
+        @(posedge clk); #1;
+        check_mem(3'd6, 16'h0003, "Mem[6] after ENCST R2");
+
+        // ====================================================================
+        // INJECTION (sim time ~36 ns).  Both ENCSTs have committed and the
+        // first LD-from-Mem[5] (cycle 5) hasn't started yet.  Mem[6] is not
+        // read until cycle 10, plenty of margin.
+        // ====================================================================
+        $display("");
+        $display("--- INJECT: SEUs into data memory (sim time %0t ns) ---", $time);
+        $display("    Mem[5] = 0x%h -> flipping bit 0 (single-bit fault)", uut.DU.dm.memory[5]);
+        $display("    Mem[6] = 0x%h -> flipping bits 0+1 (double-bit fault)", uut.DU.dm.memory[6]);
+        uut.DU.dm.memory[5] = uut.DU.dm.memory[5] ^ 16'h0001;
+        uut.DU.dm.memory[6] = uut.DU.dm.memory[6] ^ 16'h0003;
+        check_mem(3'd5, 16'h0009, "Mem[5] post-inject (8 XOR 1)");
+        check_mem(3'd6, 16'h0000, "Mem[6] post-inject (3 XOR 3)");
+
+        $display("");
+        $display("--- Phase 2: SEC story (plain LD / CHECK / SCRUB / CHECK / LD on Mem[5]) ---");
+
+        // Cycle 5 - plain LD R6 <- Mem[5] (CORRUPTED): the baseline-without-
+        // ErrCo demonstration.  R6 reads memory directly with no decoding, so
+        // it should get the literal corrupted bits.
+        @(posedge clk); #1;
+        check_reg(3'd6, 16'h0009, "R6 after plain LD of CORRUPTED Mem[5] (no protection)");
+
+        // Cycle 6 - CHECK R3 <- status of Mem[5].  We sample errco_SE
+        // mid-cycle (50ns) to confirm the live flag is high, then post-cycle
+        // to confirm the status word landed in R3.
+        // The mid-cycle sample needs us to be inside 45-55ns.
+        #4;  // 46+4 = 50ns, mid-cycle 6
+        check_flag(uut.DU.errco_SE, 1'b1, "errco_SE during CHECK of corrupted Mem[5]");
+        check_flag(uut.DU.errco_DE, 1'b0, "errco_DE clear during single-error CHECK");
+        @(posedge clk); #1;  // 56ns - post-cycle 6
+        check_reg(3'd3, 16'h0001, "R3 = CHECK status word: SE bit set (0x0001)");
+
+        // Cycle 7 - SCRUB Mem[5]: hardware repair.  Decoder corrects 9 -> 8,
+        // mem_we_errco writes 8 back, parity_we stays low (data-bit error,
+        // parity was fine and doesn't need rewrite).
+        @(posedge clk); #1;
+        check_mem(3'd5, 16'h0008, "Mem[5] after SCRUB: REPAIRED");
+
+        // Cycle 8 - CHECK R4 <- status of NOW-CLEAN Mem[5].  Critically:
+        // this CHECK must report clean.  If SCRUB didn't actually fix the
+        // memory, this CHECK would still see SE=1 and we'd catch it here.
+        @(posedge clk); #1;
+        check_reg(3'd4, 16'h0000, "R4 = CHECK status word post-SCRUB: all clean (0x0000)");
+
+        // Cycle 9 - plain LD R5 <- Mem[5]: independent confirmation that the
+        // repair is real by reading through the unprotected path.
+        @(posedge clk); #1;
+        check_reg(3'd5, 16'h0008, "R5 after plain LD of REPAIRED Mem[5]");
+
+        $display("");
+        $display("--- Phase 3: DE story (LDC, SCRUB, CHECK on double-corrupted Mem[6]) ---");
+
+        // Cycle 10 starts at 85ns posedge -> ends at 95ns posedge.
+        // During this cycle the LDC reads double-corrupted Mem[6]=0 against
+        // parity[6]=enc(3).  DE asserts, errco_invalid asserts, GPR write
+        // suppressed.  R7 should stay at its previous value (= 0, since
+        // nothing has written it).
+        #4;  // 86+4 = 90ns, mid-cycle 10
+        check_flag(uut.DU.errco_DE,      1'b1, "errco_DE during LDC of double-corrupted Mem[6]");
+        check_flag(uut.DU.errco_invalid, 1'b1, "errco_invalid asserted - LDC write suppressed");
+
+        @(posedge clk); #1;  // 96ns - post-cycle 10
+        check_reg(3'd7, 16'h0000, "R7 unchanged after DE-suppressed LDC");
+
+        // Cycle 11 - SCRUB Mem[6]: DE means mem_we_errco stays low; Mem[6]
+        // is NOT overwritten with garbage.
+        #4;  // 96+4 = 100ns, mid-cycle 11
+        check_flag(uut.DU.errco_DE, 1'b1, "errco_DE during SCRUB of double-corrupted Mem[6]");
+        @(posedge clk); #1;  // 106ns - post-cycle 11
+        check_mem(3'd6, 16'h0000, "Mem[6] unchanged after DE-suppressed SCRUB");
+
+        // Cycle 12 - CHECK R1 <- status of Mem[6].  R1 gets overwritten with
+        // {13'b0, PE=0, DE=1, SE=0} = 0x0002.  Distinct from R1's earlier
+        // value of 0x0008, so a silent no-write would be caught.
+        #4;  // 106+4 = 110ns, mid-cycle 12
+        check_flag(uut.DU.errco_DE, 1'b1, "errco_DE during CHECK of double-corrupted Mem[6]");
+        @(posedge clk); #1;  // 116ns - post-cycle 12
+        check_reg(3'd1, 16'h0002, "R1 overwritten with DE status word (0x0002)");
+
+        // Cycle 13 - JMP self.  PC should park at 0x18.
+        @(posedge clk); #1;
+        check_pc(16'h0018, "PC parked at JMP self after closed-loop test");
+
+        // Final architectural snapshot
+        $display("");
+        $display("=== Final architectural state ===");
+        $display("    R1=0x%h R2=0x%h R3=0x%h R4=0x%h",
+                 uut.DU.reg_file.reg_array[1], uut.DU.reg_file.reg_array[2],
+                 uut.DU.reg_file.reg_array[3], uut.DU.reg_file.reg_array[4]);
+        $display("    R5=0x%h R6=0x%h R7=0x%h",
+                 uut.DU.reg_file.reg_array[5], uut.DU.reg_file.reg_array[6],
+                 uut.DU.reg_file.reg_array[7]);
+        $display("    Mem[5]=0x%h Mem[6]=0x%h",
+                 uut.DU.dm.memory[5], uut.DU.dm.memory[6]);
+        $display("");
+        if (fail_count == 0)
+            $display("=== ALL %0d TESTS PASSED ===", test_id - 1);
+        else
+            $display("=== %0d / %0d TESTS FAILED ===", fail_count, test_id - 1);
+
+        $finish;
+    end
+
+endmodule
