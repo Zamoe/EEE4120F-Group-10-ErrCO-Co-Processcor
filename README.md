@@ -98,8 +98,43 @@ The integration interfaces with the baseline modules via external bus intercepti
 
 ---
 
-## Compilation and Simulation Terminal Controls
+## Integration Test Vectors
 
+The full-system integration between the StarCore-1 processor and the ErrCo co-processor is validated using two comprehensive, system-level testbenches. The raw code, instruction programs, and memory states for these tests are stored as reference text files and must be loaded into the active testing files to run the simulations.
+
+### File Locations
+* **Testbench Files (`.v` targets):** Located in the `tb/Starcore test vectors/` directory (`StarCore1_tb1.txt`, `StarCore1_tb2.txt`).
+* **Program & Data Files (`.prog` and `.data` targets):** Located in the `test/Test vectors/` directory (`test1_prog.txt`, `test1_data.txt`, `test2_prog.txt`, `test2_data.txt`).
+
+### Test Profiles
+
+* **Test 1: Hardware-Correctness Integration (`StarCore1_tb1`)**
+    * **Objective:** Verifies that the hardware functions correctly as a unified system.
+    * **Details:** Runs a 15-instruction program that first confirms the base StarCore-1 ISA (LD, ADD, SUB, etc.) executes without behavioral regression. It then executes protected stores (`ENCST`) and simulates radiation strikes (Single and Double Event Upsets) via testbench injection. Finally, it validates the hardware's Single Error Correction (SEC) path and verifies that the Double Error (DE) hardware-gating mechanism successfully suppresses register writes.
+
+* **Test 2: Closed-Loop Software Visibility (`StarCore1_tb2`)**
+    * **Objective:** Verifies that ErrCo's protection is observable and usable through the software instruction interface.
+    * **Details:** Executes a complete programmatic detect-repair-verify loop. It demonstrates what happens to corrupted memory without protection (plain `LD`), uses `CHECK` to read the error status words into the register file, uses `SCRUB` to actively repair the memory, and verifies the repair with subsequent clean reads. It also confirms that DE-suppression safely blocks uncorrectable data across all ErrCo read-side operations (`LDC`, `SCRUB`, `CHECK`).
+
+### How to Run the Integration Tests
+
+Because the high-level testbench (`StarCore1_tb.v`) draws its instructions from `test.prog` and its memory from `test.data`, you must manually stage the files for whichever test you wish to run. 
+
+**To run Test 1:**
+1. Copy the contents of `tb/Starcore test vectors/StarCore1_tb1.txt` and paste them into `tb/StarCore1_tb.v`.
+2. Copy the contents of `test/Test vectors/test1_prog.txt` and paste them into `test/test.prog`.
+3. Copy the contents of `test/Test vectors/test1_data.txt` and paste them into `test/test.data`.
+4. Navigate to the `test/` directory and compile/run the simulation using your standard `iverilog` build command.
+
+**To run Test 2:**
+1. Copy the contents of `tb/Starcore test vectors/StarCore1_tb2.txt` and paste them into `tb/StarCore1_tb.v`.
+2. Copy the contents of `test/Test vectors/test2_prog.txt` and paste them into `test/test.prog`.
+3. Copy the contents of `test/Test vectors/test2_data.txt` and paste them into `test/test.data`.
+4. Navigate to the `test/` directory and compile/run the simulation.
+
+---
+
+## Compilation and Simulation Terminal Controls
 
 ### Manual Execution Protocols
 
