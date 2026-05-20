@@ -297,6 +297,9 @@ The provided test program (`test/test.prog`) exercises the following sequence of
 
 ---
 
+## Poster and Project Explanation
+Please view the "Project_ErrCo_Poster.png" file in the repo if you want any more details on the entire project as a whole. 
+
 ## Common Issues and Tips
 
 **"Unable to bind wire/reg/memory" errors on the integration testbench:**
