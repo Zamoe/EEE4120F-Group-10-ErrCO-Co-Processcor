@@ -15,7 +15,7 @@ The development, synthesis verification, and systemic testing of this architectu
 - **Instruction ROM:** 16 words × 16 bits (loaded from `test/test.prog`)
 - **Data RAM Matrix:** 8 words × 16 bits (loaded from `test/test.data`) 
 - **Parity Shadow RAM:** 8 words × 6 bits (Internal co-processor space tracking Data RAM indices)
-- **Execution Lifecycle:** Strictly single-cycle combinational resolution; memories write synchronously on `posedge clk`, while error-syndrome evaluation, bit-flipping, and   double-fault suppression settle combinationally within the single clock phase.
+- **Execution Lifecycle:** Strictly single-cycle combinational resolution; memories write synchronously on `posedge clk`, while error-syndrome evaluation, bit-flipping, and double-fault suppression settle combinationally within the single clock phase.
 
 ### Extended Instruction Set Architecture (ISA)
 
@@ -24,9 +24,9 @@ The development, synthesis verification, and systemic testing of this architectu
 | `0000`         | LD       | —                   | I-type | Standard data load from data memory to register  |
 | `0001`         | ST       | —                   | I-type | Standard unprotected register store to data memory  |
 | `0010–1001`    | R-type   | —                   | R-type | Native compute operations (`ADD`, `SUB`, `AND`, etc.) |
-| `1010`         | **ENCST**| `2'b00`             | ErrCo  | **Encoded Store:** Generate 6-bit parity and write to memory|
+| `1010`         | **ENCST**| `2'b00`             | ErrCo  | **Encoded Store:** Generate 6-bit parity and write to memory |
 | `1010`         | **SCRUB**| `2'b01`             | ErrCo  | **Memory Scrub:** Read, verify, and overwrite corrected data/parity |
-| `1010`         | **LDC**  | `2'b10`             | ErrCo  | **Verified Load:** Load from data memory, correct single errors |
+| `1010`         | **LDC** | `2'b10`             | ErrCo  | **Verified Load:** Load from data memory, correct single errors |
 | `1010`         | **CHECK**| `2'b11`             | ErrCo  | **Diagnostic Check:** Output 16-bit status word `{13'b0, PE, DE, SE}`  |
 | `1011`         | BEQ      | —                   | I-type | Branch if R[RS1] == R[RS2] |
 | `1100`         | BNE      | —                   | I-type | Branch if R[RS1] != R[RS2] |
@@ -37,7 +37,7 @@ The development, synthesis verification, and systemic testing of this architectu
 ## Folder Structure
 Project-ErrCo/
 
-├── Makefile                    # Simulation and test suite automation
+├── Makefile                     # Simulation and test suite automation
 ├── src/
 │   ├── Parameter.v            # Compile-time hardware constraints
 │   ├── ALU.v                  # 16-bit execution arithmetic logic
