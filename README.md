@@ -5,6 +5,7 @@ Project ErrCo introduces an error-correcting hardware co-processor integrated di
 
 The development, synthesis verification, and systemic testing of this architecture are built upon **Icarus Verilog** for circuit simulation and **GTKWave** for digital signal validation.
 
+![Project ErrCo Poster](Project_ErrCo_Poster.png)
 ---
 
 ## Architecture Specifications
